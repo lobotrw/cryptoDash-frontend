@@ -1,4 +1,4 @@
-```md
+
 # 📊 CryptoDash – Market Dashboard (Frontend)
 
 CryptoDash is a real-time crypto market dashboard built with **React** and **Apache ECharts**, designed for advanced market analysis and indicator visualization.
