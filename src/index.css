@@ -1,0 +1,91 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background: #0b1220;
+  color: #e9edf0;
+}
+
+.app-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar {
+  background: #020617;
+  width: 15rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #35363d;
+}
+
+.sidebar nav ul {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 0.1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sidebar a {
+  display: block; /* IMPORTANT */
+  width: 100%;
+  padding: 0.3rem 0.3rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: #778eb3;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.sidebar a:hover {
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.sidebar a.active {
+  background: #0f172a;
+  color: #67d1ff;
+}
+.page-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.page-content h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-image {
+  max-width: 60%;
+  height: 10%;
+  margin-top: 2rem;
+  border-radius: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: block;
+}
