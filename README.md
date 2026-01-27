@@ -4,7 +4,6 @@
 CryptoDash is a real-time crypto market dashboard built with **React** and **Apache ECharts**, designed for advanced market analysis and indicator visualization.
 
 This frontend consumes a custom backend API that streams OHLCV data and computed indicators such as **ATR** and **Supertrend**.
-
 ---
 
 ##  Features
@@ -79,9 +78,10 @@ http://localhost:5173
 
 ---
 
-## 🔌 Backend Requirement
+## Backend Requirement
 
 This frontend expects the **CryptoDash backend** to be running.
+backend ->> https://github.com/VanHes1ng/cryptoDash-server
 
 Required API:
 ```
