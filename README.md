@@ -1,73 +1,136 @@
-# React + TypeScript + Vite
+```md
+# 📊 CryptoDash – Market Dashboard (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CryptoDash is a real-time crypto market dashboard built with **React** and **Apache ECharts**, designed for advanced market analysis and indicator visualization.
 
-Currently, two official plugins are available:
+This frontend consumes a custom backend API that streams OHLCV data and computed indicators such as **ATR** and **Supertrend**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🚀 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 📈 Candlestick charts (OHLC)
+- 🔁 Auto-updating market data
+- 📉 Supertrend overlay (bullish / bearish)
+- 📊 Market statistics panel
+- 📋 Interactive market table
+  - Price & volume change
+  - Buy / sell volume
+  - Delta & delta %
+  - Supertrend direction
+- 🖱 Click a symbol → instantly updates the chart
+- 🌙 Dark, TradingView-style UI
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🧱 Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React
+- TypeScript
+- Apache ECharts
+- Vite
+- Fetch API
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📦 Project Structure
+
+```
+src/
+├─ components/
+│  ├─ CandlestickChart.tsx
+│  ├─ MarketStats.tsx
+│  ├─ MarketTable.tsx
+│  └─ MarketControls.tsx
+├─ pages/
+│  └─ Dashboard.tsx
+├─ config/
+│  └─ market.ts
+└─ main.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## ⚙️ Setup & Run
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1️⃣ Install dependencies
+```bash
+npm install
+```
+
+### 2️⃣ Environment variables
+Create `.env` file:
+
+```env
+VITE_API_URL=http://localhost:4000
+```
+
+### 3️⃣ Run locally
+```bash
+npm run dev
+```
+
+The app will be available at:
+```
+http://localhost:5173
+```
+
+---
+
+## 🔌 Backend Requirement
+
+This frontend expects the **CryptoDash backend** to be running.
+
+Required API:
+```
+GET /api/candles?symbol=BTCUSDT&tf=1h&limit=200
+```
+
+Returned candle fields:
+- openTime
+- open
+- high
+- low
+- close
+- volume
+- takerBuyVolume
+- atr
+- supertrend
+- supertrendDir
+
+---
+
+## 🧠 Design Notes
+
+- Indicators are computed server-side
+- Frontend focuses purely on visualization
+- Apache ECharts chosen for:
+  - Stability
+  - No flickering
+  - Multi-series overlays
+  - Advanced axis control
+
+---
+
+## 📌 Roadmap
+
+- More indicators (EMA, VWAP, RSI)
+- Symbol search & filters
+- Multi-timeframe comparison
+- Full-screen chart mode
+- Cloud deployment (Vercel)
+
+---
+
+## ⚠️ Disclaimer
+
+This project is for educational and analytical purposes only.  
+It is not financial advice.
+
+---
+
+## 🧑‍💻 Author
+
+VanHes1ng  
+Crypto market analytics & system development
 ```
