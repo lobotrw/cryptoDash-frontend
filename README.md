@@ -1,5 +1,5 @@
 
-# 📊 CryptoDash – Market Dashboard (Frontend)
+#  CryptoDash – Market Dashboard (Frontend)
 
 CryptoDash is a real-time crypto market dashboard built with **React** and **Apache ECharts**, designed for advanced market analysis and indicator visualization.
 
@@ -7,23 +7,25 @@ This frontend consumes a custom backend API that streams OHLCV data and computed
 
 ---
 
-## 🚀 Features
+##  Features
 
-- 📈 Candlestick charts (OHLC)
-- 🔁 Auto-updating market data
-- 📉 Supertrend overlay (bullish / bearish)
-- 📊 Market statistics panel
-- 📋 Interactive market table
+- Candlestick charts (OHLC)
+- Auto-updating market data
+- Supertrend overlay (bullish / bearish)
+- Market statistics panel
+- Interactive market table
   - Price & volume change
   - Buy / sell volume
   - Delta & delta %
   - Supertrend direction
-- 🖱 Click a symbol → instantly updates the chart
-- 🌙 Dark, TradingView-style UI
+- Click a symbols row at the table → instantly updates the chart to clicked row
+   Dark UI style
+
+<img width="2559" height="1287" alt="image" src="https://github.com/user-attachments/assets/320c66f6-cbe6-4134-9998-3690fea54460" />
 
 ---
 
-## 🧱 Tech Stack
+##  Tech Stack
 
 - React
 - TypeScript
@@ -33,7 +35,7 @@ This frontend consumes a custom backend API that streams OHLCV data and computed
 
 ---
 
-## 📦 Project Structure
+##  Project Structure
 
 ```
 src/
@@ -100,37 +102,19 @@ Returned candle fields:
 
 ---
 
-## 🧠 Design Notes
-
+## Design Notes
 - Indicators are computed server-side
 - Frontend focuses purely on visualization
-- Apache ECharts chosen for:
-  - Stability
-  - No flickering
-  - Multi-series overlays
-  - Advanced axis control
 
 ---
 
-## 📌 Roadmap
-
-- More indicators (EMA, VWAP, RSI)
-- Symbol search & filters
-- Multi-timeframe comparison
-- Full-screen chart mode
-- Cloud deployment (Vercel)
-
----
-
-## ⚠️ Disclaimer
-
+## Disclaimer
 This project is for educational and analytical purposes only.  
 It is not financial advice.
 
 ---
 
-## 🧑‍💻 Author
-
+## Author
 VanHes1ng  
 Crypto market analytics & system development
 ```
