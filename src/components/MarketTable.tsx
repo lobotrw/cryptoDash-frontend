@@ -1,12 +1,7 @@
-import React, { useMemo } from "react";
-
-type Candle = {
-  openTime: string;
-  close: number;
-  volume?: number;
-  supertrendDir?: 1 | -1 | null;
-  takerBuyVolume?: number;
-};
+import React, { useEffect, useMemo, useState } from "react";
+import { candlesUrl } from "../config/api";
+import type { ApiCandle } from "../lib/stats";
+import { computeStats } from "../lib/stats";
 
 type Row = {
   symbol: string;
@@ -19,6 +14,8 @@ type Row = {
   delta: number;
   deltaPct: number;
   supertrendDir: 1 | -1 | null;
+  stale: boolean;
+  error?: string;
 };
 
 type Props = {
@@ -26,12 +23,8 @@ type Props = {
   timeframe: string;
   selectedSymbol: string;
   onSelectSymbol: (symbol: string) => void;
+  refreshMs?: number;
 };
-
-function pctChange(curr: number, prev: number) {
-  if (!Number.isFinite(curr) || !Number.isFinite(prev) || prev === 0) return 0;
-  return ((curr - prev) / prev) * 100;
-}
 
 function fmtNum(n: number, d = 2) {
   if (!Number.isFinite(n)) return "-";
@@ -44,88 +37,67 @@ function fmtPct(n: number) {
   return `${sign}${n.toFixed(2)}%`;
 }
 
+const errorRow = (symbol: string, error: string): Row => ({
+  symbol, price: NaN, priceChangePct: NaN, volume: NaN, volumeChangePct: NaN, buyVolume: NaN,
+  sellVolume: NaN, delta: NaN, deltaPct: NaN, supertrendDir: null, stale: false, error,
+});
+
+async function loadRow(symbol: string, timeframe: string, signal: AbortSignal): Promise<Row> {
+  const res = await fetch(candlesUrl(symbol, timeframe, 3), { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  const candles: ApiCandle[] = json.candles ?? [];
+  const s = computeStats(candles, timeframe);
+  if (!s) throw new Error("no data");
+  return {
+    symbol,
+    price: s.price,
+    priceChangePct: s.priceChangePct,
+    volume: s.totalVolume,
+    volumeChangePct: s.volumeChangePct,
+    buyVolume: s.buyVolume,
+    sellVolume: s.sellVolume,
+    delta: s.delta,
+    deltaPct: s.deltaPct,
+    supertrendDir: s.supertrendDir,
+    stale: Boolean(json.stale),
+  };
+}
+
 export default function MarketTable({
   symbols,
   timeframe,
   selectedSymbol,
   onSelectSymbol,
+  refreshMs = 30_000,
 }: Props) {
-  const [rows, setRows] = React.useState<Row[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch small candle slices for each symbol (limit=3 is enough)
-  React.useEffect(() => {
-    let cancelled = false;
+  // Small candle slices per symbol, refreshed on the same interval as the chart.
+  // One failing symbol only marks its own row (allSettled), never blanks the table.
+  useEffect(() => {
+    const ctrl = new AbortController();
 
     async function load() {
       setLoading(true);
-      setError(null);
-
-      try {
-        const results = await Promise.all(
-          symbols.map(async (symbol) => {
-            const res = await fetch(
-              `http://localhost:4000/api/candles?symbol=${symbol}&tf=${timeframe}&limit=3`,
-            );
-            if (!res.ok) throw new Error(`Failed ${symbol}`);
-
-            const json = await res.json();
-            const candles: Candle[] = json.candles ?? [];
-            return { symbol, candles };
-          }),
-        );
-
-        const computed: Row[] = results
-          .map(({ symbol, candles }) => {
-            const last = candles[candles.length - 1];
-            const prev = candles[candles.length - 2];
-
-            if (!last || !prev) return null;
-
-            const price = last.close;
-            const priceChangePct = pctChange(last.close, prev.close);
-
-            const vLast = Number(last.volume ?? 0);
-            const vPrev = Number(prev.volume ?? 0);
-            const volumeChangePct = vPrev === 0 ? 0 : pctChange(vLast, vPrev);
-
-            const totalVolume = Number(last.volume ?? 0);
-            const buyVolume = Number(last.takerBuyVolume ?? 0);
-            const sellVolume = Math.max(totalVolume - buyVolume, 0);
-
-            const delta = buyVolume - sellVolume;
-            const deltaPct =
-              totalVolume === 0 ? 0 : (delta / totalVolume) * 100;
-
-            return {
-              symbol,
-              price,
-              priceChangePct,
-              volume: totalVolume,
-              volumeChangePct,
-              buyVolume,
-              sellVolume,
-              delta,
-              deltaPct,
-              supertrendDir: last.supertrendDir ?? null,
-            };
-          })
-          .filter(Boolean) as Row[];
-
-        if (!cancelled) setRows(computed);
-      } catch (e) {
-        if (!cancelled) setError("Failed to load table");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      const settled = await Promise.allSettled(symbols.map((s) => loadRow(s, timeframe, ctrl.signal)));
+      if (ctrl.signal.aborted) return;
+      setRows(
+        settled.map((r, i) =>
+          r.status === "fulfilled" ? r.value : errorRow(symbols[i], (r.reason as Error)?.message ?? "error"),
+        ),
+      );
+      setLoading(false);
     }
 
     load();
+    const interval = setInterval(load, refreshMs);
     return () => {
-      cancelled = true;
+      ctrl.abort();
+      clearInterval(interval);
     };
-  }, [symbols, timeframe]);
+  }, [symbols, timeframe, refreshMs]);
 
   const sortedRows = useMemo(() => {
     // Keep stable ordering: selected first, then by symbol
@@ -160,7 +132,7 @@ export default function MarketTable({
               <th style={th}>Price %</th>
               <th style={th}>Volume</th>
               <th style={th}>Vol %</th>
-              <th style={th}>Buy Vol</th>
+              <th style={th} title="Taker buy volume of the last closed candle">Buy Vol</th>
               <th style={th}>Sell Vol</th>
               <th style={th}>Delta</th>
               <th style={th}>Δ%</th>
@@ -190,7 +162,11 @@ export default function MarketTable({
                     borderBottom: "1px solid rgba(255,255,255,0.04)",
                   }}
                 >
-                  <td style={td}>{r.symbol.replace("USDT", "")}</td>
+                  <td style={td}>
+                    {r.symbol.replace("USDT", "")}
+                    {r.stale && <span style={{ color: "#f59e0b", marginLeft: 6 }} title="No new candles: delisted?">stale</span>}
+                    {r.error && <span style={{ color: "#f87171", marginLeft: 6 }} title={r.error}>unavailable</span>}
+                  </td>
                   <td style={td}>{fmtNum(r.price, 2)}</td>
 
                   <td
@@ -255,9 +231,9 @@ export default function MarketTable({
               );
             })}
 
-            {!loading && !error && sortedRows.length === 0 && (
+            {!loading && sortedRows.length === 0 && (
               <tr>
-                <td style={{ ...td, padding: "1rem" }} colSpan={6}>
+                <td style={{ ...td, padding: "1rem" }} colSpan={10}>
                   No data
                 </td>
               </tr>

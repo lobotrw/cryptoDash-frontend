@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
+import { fmtUtc, utcAxisLabel } from "../lib/stats";
 
 type CandleFromApi = {
   openTime: string;
@@ -42,7 +43,7 @@ export default function CandlestickChart({ candles }: Props) {
 
     return {
       backgroundColor: "#020617",
-      animation: true, // IMPORTANT: no flicker
+      animation: false, // refreshes update in place without re-animating
       grid: {
         left: 35,
         right: 80, // ⬅️ increase this (try 70–100)
@@ -53,41 +54,18 @@ export default function CandlestickChart({ candles }: Props) {
         trigger: "axis",
         axisPointer: {
           label: {
-            formatter: (p: any) => {
-              const d = new Date(p.value);
-              return d.toLocaleString("en-US", {
-                weekday: "short",
-                day: "2-digit",
-                month: "short",
-                year: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-            },
+            // candle open times are UTC; label them as such
+            formatter: (p: { value: string | number }) => fmtUtc(p.value),
           },
         },
       },
       xAxis: {
         type: "category",
         data: times,
-
+        name: "UTC",
+        nameLocation: "end",
         axisLabel: {
-          formatter: (value: string) => {
-            const d = new Date(value);
-
-            const hh = String(d.getHours()).padStart(2, "0");
-            const mm = String(d.getMinutes()).padStart(2, "0");
-
-            // show date at midnight
-            if (hh === "00" && mm === "00") {
-              return d.toLocaleDateString("en-US", {
-                day: "2-digit",
-                month: "short",
-              });
-            }
-
-            return `${hh}:${mm}`;
-          },
+          formatter: (value: string) => utcAxisLabel(value),
         },
       },
       yAxis: {
