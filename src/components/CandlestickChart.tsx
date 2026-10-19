@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 
 type CandleFromApi = {
