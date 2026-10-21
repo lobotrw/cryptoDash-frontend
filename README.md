@@ -118,3 +118,19 @@ It is not financial advice.
 VanHes1ng  
 Crypto market analytics & system development
 ```
+
+## Configuration
+
+- `VITE_API_URL`: the backend base URL (default `http://localhost:4000`). See `.env.example`. The backend must allow this app's origin through its `CORS_ORIGIN` setting.
+
+## How the numbers are defined
+
+- The backend stores **closed candles only**. The stats panel and the table describe the **last closed candle** compared with the one before it, and the panel shows its time. (Comparing a still-forming candle with a full one made "Volume Change" look like a large drop.)
+- **Taker buy volume** is Binance's taker-buy base volume. Sell = total − taker buy. Delta = buy − sell.
+- All times are shown in **UTC**, matching the candle open times.
+- The chart, stats and table refresh every 30 s. A refresh updates the chart in place without unmounting it. If one symbol fails, only its own row is marked "unavailable".
+- A **stale** badge appears when the backend reports no new candles for a symbol (for example after a delisting). MATICUSDT was replaced by POLUSDT.
+
+## Tests
+
+`npm test` (vitest) runs the stats and UTC-label tests. Also run `npm run lint` and `npm run build`.

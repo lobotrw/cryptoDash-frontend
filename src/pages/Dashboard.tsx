@@ -1,67 +1,72 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CandlestickChart from "../components/CandlestickChart";
 import MarketControls from "../components/MarketControls";
 import { COINS, TIMEFRAMES } from "../config/market";
+import { candlesUrl } from "../config/api";
 import MarketTable from "../components/MarketTable";
 import MarketStats from "../components/MarketStats";
+import type { ApiCandle } from "../lib/stats";
+import { fmtUtc } from "../lib/stats";
 
-type Candle = {
-  openTime: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-  supertrendDir?: 1 | -1 | null;
-};
+const REFRESH_MS = 30_000;
 
 export default function Dashboard() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("1h");
-  const [candles, setCandles] = useState<Candle[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [candles, setCandles] = useState<ApiCandle[]>([]);
+  const [stale, setStale] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedKey = useRef<string | null>(null);
 
-  const fetchCandles = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(
-        `http://localhost:4000/api/candles?symbol=${symbol}&tf=${timeframe}&limit=300`,
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch candles");
+  const fetchCandles = useCallback(
+    async (signal?: AbortSignal) => {
+      const key = `${symbol}|${timeframe}`;
+      // Only the first load of a symbol/timeframe shows "Loading"; refreshes keep the chart on screen
+      if (loadedKey.current !== key) setInitialLoading(true);
+      try {
+        const res = await fetch(candlesUrl(symbol, timeframe, 300), { signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setCandles(json.candles ?? []);
+        setStale(Boolean(json.stale));
+        setError(null);
+        loadedKey.current = key;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.error(err);
+        setError("Failed to load data");
+      } finally {
+        setInitialLoading(false);
       }
-
-      const json = await res.json();
-      setCandles(json.candles ?? []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [symbol, timeframe],
+  );
 
   useEffect(() => {
-    // initial fetch
-    fetchCandles();
+    const ctrl = new AbortController();
+    fetchCandles(ctrl.signal);
+    const interval = setInterval(() => fetchCandles(ctrl.signal), REFRESH_MS);
+    return () => {
+      ctrl.abort();
+      clearInterval(interval);
+    };
+  }, [fetchCandles]);
 
-    // auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchCandles();
-    }, 30_000);
-
-    return () => clearInterval(interval);
-  }, [symbol, timeframe]);
+  const showChart = candles.length > 0 && loadedKey.current === `${symbol}|${timeframe}`;
+  const last = candles[candles.length - 1];
 
   return (
     <div style={{ marginTop: "1rem" }}>
-      <h1 style={{ marginBottom: "1rem" }}>
+      <h1 style={{ marginBottom: "0.25rem" }}>
         {symbol.replace("USDT", "/USDT")} · {timeframe}
       </h1>
+      {last && (
+        <div style={{ fontSize: 12, color: stale ? "#f59e0b" : "rgba(255,255,255,0.55)", marginBottom: "0.75rem" }}>
+          Last closed candle: {fmtUtc(last.openTime)}
+          {stale && " · STALE: no new candles (delisted symbol?)"}
+        </div>
+      )}
 
       <MarketControls
         timeframe={timeframe}
@@ -69,10 +74,10 @@ export default function Dashboard() {
         timeframes={TIMEFRAMES}
       />
 
-      {loading && <div>Loading market data…</div>}
+      {initialLoading && !showChart && <div>Loading market data…</div>}
       {error && <div style={{ color: "#f87171" }}>{error}</div>}
 
-      {!loading && !error && candles.length > 0 && (
+      {showChart && (
         <div style={{ display: "flex" }}>
           <div style={{ flex: 3, gap: "1rem", marginRight: "1rem" }}>
             <CandlestickChart candles={candles} />
@@ -88,11 +93,7 @@ export default function Dashboard() {
               background: "rgba(255,255,255,0.02)",
             }}
           >
-            <MarketStats
-              symbol={symbol}
-              timeframe={timeframe}
-              candles={candles}
-            />{" "}
+            <MarketStats symbol={symbol} timeframe={timeframe} candles={candles} />
           </div>
         </div>
       )}
@@ -102,6 +103,7 @@ export default function Dashboard() {
         timeframe={timeframe}
         selectedSymbol={symbol}
         onSelectSymbol={setSymbol}
+        refreshMs={REFRESH_MS}
       />
     </div>
   );

@@ -1,22 +1,13 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 
-type Candle = {
-  close: number;
-  volume?: number;
-  takerBuyVolume?: number;
-  supertrendDir?: 1 | -1 | null;
-};
+import type { ApiCandle } from "../lib/stats";
+import { computeStats, fmtUtc } from "../lib/stats";
 
 type Props = {
   symbol: string;
   timeframe: string;
-  candles: Candle[];
+  candles: ApiCandle[];
 };
-
-function pctChange(curr: number, prev: number) {
-  if (!Number.isFinite(curr) || !Number.isFinite(prev) || prev === 0) return 0;
-  return ((curr - prev) / prev) * 100;
-}
 
 function fmtNum(n: number, digits = 2) {
   if (!Number.isFinite(n)) return "-";
@@ -30,39 +21,8 @@ function fmtPct(n: number) {
 }
 
 export default function MarketStats({ symbol, timeframe, candles }: Props) {
-  const stats = useMemo(() => {
-    const last = candles[candles.length - 1];
-    const prev = candles[candles.length - 2];
-
-    if (!last) {
-      return null;
-    }
-
-    const price = last.close;
-    const priceChangePct = prev ? pctChange(last.close, prev.close) : 0;
-
-    const totalVolume = Number(last.volume ?? 0);
-    const buyVolume = Number(last.takerBuyVolume ?? 0);
-    const sellVolume = Math.max(totalVolume - buyVolume, 0);
-
-    const delta = buyVolume - sellVolume;
-    const deltaPct = totalVolume === 0 ? 0 : (delta / totalVolume) * 100;
-
-    const volumeChangePct =
-      prev && prev.volume ? pctChange(totalVolume, prev.volume) : 0;
-
-    return {
-      price,
-      priceChangePct,
-      totalVolume,
-      volumeChangePct,
-      buyVolume,
-      sellVolume,
-      delta,
-      deltaPct,
-      supertrendDir: (last.supertrendDir ?? null) as 1 | -1 | null,
-    };
-  }, [candles]);
+  // last CLOSED candle vs the closed candle before it
+  const stats = useMemo(() => computeStats(candles, timeframe), [candles, timeframe]);
 
   if (!stats) return null;
 
@@ -98,14 +58,15 @@ export default function MarketStats({ symbol, timeframe, candles }: Props) {
           {symbol.replace("USDT", "")}
         </div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-          Timeframe: {timeframe}
+          Timeframe: {timeframe} · last closed candle
         </div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{fmtUtc(stats.asOf)}</div>
       </div>
 
       <StatRow label="Price" value={fmtNum(stats.price, 2)} />
 
       <StatRow
-        label="Price Change"
+        label="Price Change (vs prev. candle)"
         value={fmtPct(stats.priceChangePct)}
         valueColor={priceUp ? "#22c55e" : "#ef4444"}
       />
@@ -113,19 +74,19 @@ export default function MarketStats({ symbol, timeframe, candles }: Props) {
       <StatRow label="Volume" value={fmtNum(stats.totalVolume, 0)} />
 
       <StatRow
-        label="Volume Change"
+        label="Volume Change (vs prev. candle)"
         value={fmtPct(stats.volumeChangePct)}
         valueColor={volUp ? "#22c55e" : "#ef4444"}
       />
 
       <StatRow
-        label="Buy Volume"
+        label="Taker Buy Volume"
         value={fmtNum(stats.buyVolume, 0)}
         valueColor="#22c55e"
       />
 
       <StatRow
-        label="Sell Volume"
+        label="Taker Sell Volume"
         value={fmtNum(stats.sellVolume, 0)}
         valueColor="#ef4444"
       />

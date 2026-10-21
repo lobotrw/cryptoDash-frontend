@@ -7,7 +7,7 @@ export const COINS = [
   "SOLUSDT",
   "DOGEUSDT",
   "DOTUSDT",
-  "MATICUSDT",
+  "POLUSDT", // MATICUSDT was delisted (renamed POL) in Sept 2024
   "LTCUSDT",
 ];
 
